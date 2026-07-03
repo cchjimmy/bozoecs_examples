@@ -1,0 +1,3 @@
+[submodule "lib/BozoECS"]
+	path = lib/BozoECS
+	url = https://github.com/cchjimmy/BozoECS.git

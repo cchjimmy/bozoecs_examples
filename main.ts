@@ -11,12 +11,12 @@ if (Deno.args[0] == "debug") {
   options.sourcemap = "linked";
 }
 
-const path = "examples/";
+const path = "examples";
 const examples = Deno.readDirSync(path);
 
 for (const example of examples) {
   if (!example.isDirectory) continue;
-  const examplePath = path + example.name;
+  const examplePath = path + "/" + example.name;
   emptyDir(examplePath + "/build");
   buildExample(examplePath, options);
   watchExample(examplePath, options);

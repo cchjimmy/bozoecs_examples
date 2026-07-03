@@ -1,7 +1,7 @@
 [
   {
     "name": "particles",
-    "url": "./particles",
+    "url": "examples/particles",
     "desc": "1000 particles test.",
     "supports": {
       "desktop": true,
@@ -11,7 +11,7 @@
   },
   {
     "name": "pong",
-    "url": "./pong",
+    "url": "examples/pong",
     "desc": "Endless pong.",
     "supports": {
       "desktop": true,
@@ -21,7 +21,7 @@
   },
   {
     "name": "flappySquare",
-    "url": "./flappySquare",
+    "url": "examples/flappySquare",
     "desc": "Avoid obstacles to get high score.",
     "supports": {
       "desktop": true,
@@ -31,7 +31,7 @@
   },
   {
     "name": "snake",
-    "url": "./snake",
+    "url": "examples/snake",
     "desc": "Eat food to get high score.",
     "supports": {
       "desktop": true,
@@ -41,7 +41,7 @@
   },
   {
     "name": "blackjack",
-    "url": "./blackjack",
+    "url": "examples/blackjack",
     "desc": "Singleplayer blackjack.",
     "supports": {
       "desktop": true,
