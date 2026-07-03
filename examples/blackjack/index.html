@@ -1,0 +1,46 @@
+<!doctype html>
+<html>
+
+<head>
+	<title>Example</title>
+	<style>
+		html,
+		body {
+			color: white;
+			margin: 0px;
+			padding: 0px;
+			overflow: hidden;
+			width: 100%;
+			height: 100%;
+			background-color: #181818;
+			touch-action: none;
+			user-select: none;
+		}
+
+		canvas {
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			transform: translate(-50%, -50%);
+		}
+	</style>
+	<script defer src="build/out.js"></script>
+	<script>
+		globalThis.window.onresize = globalThis.window.onload = () => {
+			const canvas = document.querySelector("canvas");
+			if (innerWidth / innerHeight < canvas.width / canvas.height) {
+				canvas.style.height = "";
+				canvas.style.width = "100%";
+			} else {
+				canvas.style.height = "100%";
+				canvas.style.width = "";
+			}
+		}
+	</script>
+</head>
+
+<body>
+	<canvas></canvas>
+</body>
+
+</html>

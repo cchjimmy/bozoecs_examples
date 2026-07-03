@@ -1,0 +1,39 @@
+{
+  "viewport": {
+    "width": 800,
+    "height": 400
+  },
+  "entities": {
+    "player": {
+      "moveSpeed": 20,
+      "healthPoint": 10,
+      "attackDamage": 5,
+      "attackSpeed": 1,
+      "attackRange": 3,
+      "abilityPower": 0
+    },
+    "minion": {
+      "spawnRate": 1,
+      "moveSpeed": 15,
+      "healthPoint": 15,
+      "attackDamage": 5,
+      "attackSpeed": 1,
+      "attackRange": 3,
+      "abilityPower": 0
+    },
+    "turrent": {
+      "healthPoint": 100,
+      "attackDamage": 100,
+      "attackSpeed": 2,
+      "attackRange": 10,
+      "abilityPower": 100
+    },
+    "fountain": {
+      "healthPoint": 200,
+      "attackDamage": 200,
+      "attackSpeed": 2,
+      "attackRange": 10,
+      "abilityPower": 200
+    }
+  }
+}

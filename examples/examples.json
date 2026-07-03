@@ -1,0 +1,52 @@
+[
+  {
+    "name": "particles",
+    "url": "./particles",
+    "desc": "1000 particles test.",
+    "supports": {
+      "desktop": true,
+      "mobile": true
+    },
+    "developers": ["cchjimmy"]
+  },
+  {
+    "name": "pong",
+    "url": "./pong",
+    "desc": "Endless pong.",
+    "supports": {
+      "desktop": true,
+      "mobile": true
+    },
+    "developers": ["cchjimmy"]
+  },
+  {
+    "name": "flappySquare",
+    "url": "./flappySquare",
+    "desc": "Avoid obstacles to get high score.",
+    "supports": {
+      "desktop": true,
+      "mobile": true
+    },
+    "developers": ["cchjimmy"]
+  },
+  {
+    "name": "snake",
+    "url": "./snake",
+    "desc": "Eat food to get high score.",
+    "supports": {
+      "desktop": true,
+      "mobile": true
+    },
+    "developers": ["cchjimmy"]
+  },
+  {
+    "name": "blackjack",
+    "url": "./blackjack",
+    "desc": "Singleplayer blackjack.",
+    "supports": {
+      "desktop": true,
+      "mobile": true
+    },
+    "developers": ["cchjimmy"]
+  }
+]

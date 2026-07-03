@@ -1,0 +1,17 @@
+{
+	"playArea": {
+		"width": 600,
+		"height": 400
+	},
+	"paddle": {
+		"speed": 200,
+		"width": 10,
+		"height": 70,
+		"padding": 0.1
+	},
+	"ball": {
+		"speed": 200,
+		"width": 10,
+		"height": 10
+	}
+}

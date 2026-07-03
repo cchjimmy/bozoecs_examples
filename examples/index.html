@@ -1,0 +1,70 @@
+<!doctype html>
+<html>
+  <head>
+    <style>
+      * {
+        color: white;
+      }
+
+      html {
+        background-color: black;
+        font-size: 40px;
+      }
+
+      th,
+      td {
+        padding: 10px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <h1>Stuff made with BozoECS</h1>
+    <table id="example-list"></table>
+    <script type="module">
+      import { default as examples } from "./examples.json" with { type: "json" };
+
+      addRow(true, "Example", "Description", "Supported devices", "Developers");
+      const temp = [];
+      for (const example of examples) {
+        const linkToExample = document.createElement("a");
+        linkToExample.href = example.url;
+        linkToExample.innerText = example.name;
+        temp.length = 0;
+        const supports = Object.keys(example.supports)
+          .reduce((arr, x) => {
+            if (example.supports[x]) arr.push(x);
+            return arr;
+          }, temp)
+          .join(", ");
+        let devLen = example.developers.length;
+        const developers = example.developers.reduce((acc, x) => {
+          const a = document.createElement("a");
+          a.href = "https://github.com/" + x;
+          a.innerText = x;
+          acc.append(a);
+          devLen--;
+          devLen && acc.append(", ");
+          return acc;
+        }, document.createElement("span"));
+        addRow(
+          false,
+          linkToExample,
+          example.desc,
+          supports || "No support",
+          developers,
+        );
+      }
+      function addRow(isHeader, ...entries) {
+        const exampleList = document.getElementById("example-list");
+        const tr = document.createElement("tr");
+        for (const entry of entries) {
+          const td = document.createElement(isHeader ? "th" : "td");
+          td.append(entry);
+          tr.append(td);
+        }
+        exampleList.append(tr);
+      }
+    </script>
+  </body>
+</html>

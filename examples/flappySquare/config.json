@@ -1,0 +1,10 @@
+{
+	"grav": 981,
+	"hSpeedMult": 1.001,
+	"pipe": {
+		"gapHeight": 80,
+		"baseSpeed": 100,
+		"width": 30,
+		"height": 1000
+	}
+}
