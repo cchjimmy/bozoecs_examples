@@ -34,7 +34,7 @@ const hostname = Deno.networkInterfaces().find(
   (v) => v.family == "IPv4" && !isPrivate(v),
 )?.address;
 if (hostname) {
-  Deno.serve({ hostname }, (req) => serveDir(req, { fsRoot: path }));
+  Deno.serve({ hostname }, (req) => serveDir(req));
 }
 
 async function watchExample(

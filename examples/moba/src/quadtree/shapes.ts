@@ -122,7 +122,8 @@ export function rectIntersectRect(a: QtreeRect, b: QtreeRect): boolean {
         pointX,
         pointY,
       );
-      intersected ||= coeffX >= 0 && coeffX <= 1 && coeffY >= 0 && coeffY <= 1;
+      intersected ||=
+        (coeffX >= 0 && coeffX <= 1) || (coeffY >= 0 && coeffY <= 1);
       if (intersected) break;
     }
     if (intersected) break;
@@ -233,16 +234,15 @@ export function rectIntersectCircle(a: QtreeRect, b: QtreeCircle): boolean {
     b.x,
     b.y,
   );
-  if (t >= 0 && t <= 1 && u >= 0 && u <= 1) return true;
   const circleXTransformed = (b.x - a.x) * cos + (b.y - a.y) * sin;
   const circleYTransformed = (b.x - a.x) * -sin + (b.y - a.y) * cos;
-  if (
-    (Math.abs(a.width / 2 - circleXTransformed) - a.width / 2) ** 2 +
-      (Math.abs(a.height / 2 - circleYTransformed) - a.height / 2) ** 2 <
-    b.radius * b.radius
-  )
-    return true;
-  return false;
+  return (t >= 0 && t <= 1) || (u >= 0 && u <= 1)
+    ? (a.width / 2 - circleXTransformed) ** 2 < (a.width / 2 + b.radius) ** 2 &&
+        (a.height / 2 - circleYTransformed) ** 2 <
+          (a.height / 2 + b.radius) ** 2
+    : (Math.abs(a.width / 2 - circleXTransformed) - a.width / 2) ** 2 +
+        (Math.abs(a.height / 2 - circleYTransformed) - a.height / 2) ** 2 <
+        b.radius * b.radius;
 }
 export function rectContainLine(a: QtreeRect, b: QtreeLine): boolean {
   const cos = a.rad ? Math.cos(a.rad) : 1;
@@ -259,13 +259,23 @@ export function rectContainLine(a: QtreeRect, b: QtreeLine): boolean {
   );
 }
 export function lineIntersectLine(a: QtreeLine, b: QtreeLine): boolean {
-  // credit: https://stackoverflow.com/questions/4977491/determining-if-two-QtreeLine-segments-intersect/4977569#4977569
-  const d = (b.x2 - b.x1) * (a.y2 - a.y1) - (a.x2 - a.x1) * (b.y2 - b.y1);
+  return _lineIntersectLine(a.x1, a.y1, a.x2, a.y2, b.x1, b.y1, b.x2, b.y2);
+}
+function _lineIntersectLine(
+  ax1: number,
+  ay1: number,
+  ax2: number,
+  ay2: number,
+  bx1: number,
+  by1: number,
+  bx2: number,
+  by2: number,
+): boolean {
+  // credit: https://stackoverflow.com/questions/4977491/determining-if-two-line-segments-intersect/4977569#4977569
+  const d = (bx2 - bx1) * (ay2 - ay1) - (ax2 - ax1) * (by2 - by1);
   if (d == 0) return false;
-  const s =
-    (1 / d) * ((a.x1 - b.x1) * (a.y2 - a.y1) - (a.y1 - b.y1) * (a.x2 - a.x1));
-  const t =
-    (1 / d) * -(-(a.x1 - b.x1) * (b.y2 - b.y1) + (a.y1 - b.y1) * (b.x2 - b.x1));
+  const s = (1 / d) * ((ax1 - bx1) * (ay2 - ay1) - (ay1 - by1) * (ax2 - ax1));
+  const t = (1 / d) * -(-(ax1 - bx1) * (by2 - by1) + (ay1 - by1) * (bx2 - bx1));
   return s >= 0 && s <= 1 && t >= 0 && t <= 1;
 }
 export function lineIntersectPoint(a: QtreeLine, b: QtreePoint): boolean {
@@ -288,24 +298,20 @@ export function rectContainPoint(a: QtreeRect, b: QtreePoint): boolean {
   return _rectContainPoint(a, b.x, b.y);
 }
 export function rectIntersectLine(a: QtreeRect, b: QtreeLine): boolean {
-  // checks if either points of the QtreeLine lies within QtreeRect
+  if (_rectContainPoint(a, b.x1, b.y1) || _rectContainPoint(a, b.x2, b.y2))
+    return true;
   const cos = a.rad ? Math.cos(a.rad) : 1;
   const sin = a.rad ? Math.sin(a.rad) : 0;
-  const side: QtreeLine = { x1: 0, y1: 0, x2: 0, y2: 0 };
   for (let i = 0; i < 4; i++) {
-    side.x1 =
-      a.x +
-      a.width * cos * +(i == 1 || i == 2) +
-      a.height * -sin * Math.floor(i / 2);
-    side.y1 =
-      a.y +
-      a.width * sin * +(i == 1 || i == 2) +
-      a.height * cos * Math.floor(i / 2);
-    side.x2 = a.x + a.width * +(i < 2) + a.height * cos * +(i == 1 || i == 2);
-    side.y2 =
-      a.y + a.width * sin * +(i < 2) + a.height * sin * +(i == 1 || i == 2);
-    if (!lineIntersectLine(side, b)) continue;
-    return true;
+    const x1 =
+      a.x + a.width * cos * +(i == 1 || i == 2) + a.height * -sin * +(i > 1);
+    const y1 =
+      a.y + a.width * sin * +(i == 1 || i == 2) + a.height * cos * +(i > 1);
+    const x2 =
+      a.x + a.width * cos * +(i < 2) + a.height * -sin * +(i == 1 || i == 2);
+    const y2 =
+      a.y + a.width * sin * +(i < 2) + a.height * cos * +(i == 1 || i == 2);
+    if (_lineIntersectLine(x1, y1, x2, y2, b.x1, b.y1, b.x2, b.y2)) return true;
   }
   return false;
 }
