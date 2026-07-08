@@ -38,7 +38,7 @@ import {
   drawAttackTargets,
 } from "../../ecs/systems/drawing.ts";
 import { World } from "bozoecs";
-import { Quadtree } from "../../quadtree/quadtree.ts";
+import { Quadtree } from "quadtree";
 import { isQtreeElm } from "./utils.ts";
 import ctx from "../resizingCanvas/api.ts";
 import { setGameWorld } from "../gameInfo/api.ts";

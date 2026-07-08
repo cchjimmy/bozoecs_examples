@@ -55,8 +55,8 @@ export function drawGraph(world: World) {
       t.x,
       t.y,
     );
-    ctx.fillStyle = "white";
-    ctx.fillRect(0, 0, 1, 1);
+    // ctx.fillStyle = "white";
+    // ctx.fillRect(0, 0, 1, 1);
     const dy = g.yMax - g.yMin;
     const dx = g.xMax - g.xMin;
     const zeroRatio = clamp((0 - g.yMin) / dy, 0, 1);

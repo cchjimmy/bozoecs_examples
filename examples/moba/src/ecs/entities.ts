@@ -140,7 +140,8 @@ export function addButton(
   return e;
 }
 export function addPlayer(world: World, x = 0, y = 0) {
-  const player = addCircle(world, x, y, 1);
+  // const player = addCircle(world, x, y, 1);
+  const player = addRect(world, x, y, 2, 2, -1, -1);
   world.addComponent(player, Velocity);
   world.addComponent(player, Stats, config.entities.player);
   world.addComponent(player, Health, {
@@ -162,6 +163,7 @@ export function addTurrent(world: World, x: number, y: number) {
     -width / 2,
     -height + width / 2,
   );
+  world.getComponent(turrent, Transform).rad = Math.PI / 4;
   world.addComponent(turrent, Stats, config.entities.turrent);
   world.addComponent(turrent, Health, {
     max: config.entities.turrent.healthPoint,

@@ -41,7 +41,7 @@ import {
 } from "../../ecs/systems/drawing.ts";
 import { World } from "bozoecs";
 import { default as config } from "../../config.json" with { type: "json" };
-import { Quadtree } from "../../quadtree/quadtree.ts";
+import { Quadtree } from "quadtree";
 import { isQtreeElm } from "./utils.ts";
 import { Camera } from "../../ecs/components.ts";
 import * as GameInfo from "../gameInfo/api.ts";

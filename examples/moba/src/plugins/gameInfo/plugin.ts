@@ -3,7 +3,7 @@ import time from "../time/api.ts";
 import { addText } from "../../ecs/entities.ts";
 import { drawTexts } from "../../ecs/systems/drawing.ts";
 import { World } from "bozoecs";
-import { Camera, Text, Transform } from "../../ecs/components.ts";
+import { Camera, Color, Text, Transform } from "../../ecs/components.ts";
 import {
   getGameWorld,
   detectDeviceType,
@@ -19,7 +19,12 @@ let fpsRollingSum = 0;
 
 export default {
   run() {
-    addText(gameInfoWorld, 0, 0);
+    const gameText = gameInfoWorld.getComponent(
+      addText(gameInfoWorld, 0, 0),
+      Text,
+    );
+    gameText.color = "white";
+    gameText.backgroundColor = "transparent";
     const width = 200;
     const height = 100;
     const fpsGraph = addGraph(
@@ -40,15 +45,14 @@ export default {
     g.xMax = xLen;
     g.yMin = 0;
     g.yMax = 120;
-    gameInfoWorld.addComponent(fpsGraph, Text, { content: "FPS" });
+    gameInfoWorld.addComponent(fpsGraph, Text, {
+      content: "FPS",
+      backgroundColor: "transparent",
+      color: "white",
+    });
 
     const update = () => {
       ctx.resetTransform();
-      const gameText = gameInfoWorld.getComponent(
-        gameInfoWorld.query({ and: [Text] })[0],
-        Text,
-      );
-
       gameText.content = "";
       gameText.content += `Device type: ${detectDeviceType()}\n`;
       const gameWorld = getGameWorld();

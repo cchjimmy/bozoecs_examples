@@ -17,18 +17,20 @@ import {
 } from "../components.ts";
 import { pointerToScreen, screenToWorld } from "../../utils.ts";
 import time from "../../plugins/time/api.ts";
-import { Quadtree } from "../../quadtree/quadtree.ts";
+import { Quadtree } from "quadtree";
 
 export function handleMovementInput(world: World, qtree: Quadtree) {
+  const justPressedId = pointers.justPressed.findIndex((x) => x);
+  if (justPressedId == -1) return;
+
   const camEntity = world
     .query({ and: [Camera, Transform] })
     .find((e) => world.getComponent(e, Camera).isActive);
   if (camEntity == undefined) return;
+
   const camera = world.getComponent(camEntity, Camera);
   const camTransform = world.getComponent(camEntity, Transform);
 
-  const justPressedId = pointers.justPressed.findIndex((x) => x);
-  if (justPressedId == -1) return;
   const pressPos = pointerToScreen(
     {
       x: pointers.pressX[justPressedId],

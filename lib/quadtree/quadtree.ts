@@ -170,8 +170,18 @@ export class Quadtree {
       ctx.strokeStyle = color;
       for (const shape of value[1]) {
         if (isRect(shape)) {
-          ctx.moveTo(shape.x, shape.y);
-          ctx.rect(shape.x, shape.y, shape.width, shape.height);
+          const c = shape.rad ? Math.cos(shape.rad) : 1;
+          const s = shape.rad ? Math.sin(shape.rad) : 0;
+          ctx.transform(c, s, -s, c, shape.x, shape.y);
+          ctx.rect(0, 0, shape.width, shape.height);
+          ctx.transform(
+            c,
+            -s,
+            s,
+            c,
+            -(shape.x * c + shape.y * s),
+            -(shape.x * -s + shape.y * c),
+          );
         } else if (isCircle(shape)) {
           ctx.moveTo(shape.x + shape.radius, shape.y);
           ctx.arc(shape.x, shape.y, shape.radius, 0, Math.PI * 2);

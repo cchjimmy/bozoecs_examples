@@ -13,7 +13,7 @@ export type QtreeShapes = QtreeRect | QtreeCircle | QtreeLine | QtreePoint;
 /**
  * using vector representation of Line {x1, y1, x2, y2}, calculates x in origin {x1, y1} + x * dir {x2 - x1, y2 - y1}, which gives the point that Point {px, py} intersects perpendicularly
  */
-export function perpendicularCoefficient(
+function _perpendicularCoefficient(
   x1: number,
   y1: number,
   x2: number,
@@ -64,7 +64,7 @@ export function rectContainRect(a: QtreeRect, b: QtreeRect): boolean {
       b.x + b.width * cosB * (i % 2) + b.height * -sinB * Math.floor(i / 2);
     const pointY =
       b.y + b.width * sinB * (i % 2) + b.height * cosB * Math.floor(i / 2);
-    let coeff = perpendicularCoefficient(
+    let coeff = _perpendicularCoefficient(
       a.x,
       a.y,
       a.x + a.width * cosA,
@@ -73,7 +73,7 @@ export function rectContainRect(a: QtreeRect, b: QtreeRect): boolean {
       pointY,
     );
     contained &&= coeff > 0 && coeff < 1;
-    coeff = perpendicularCoefficient(
+    coeff = _perpendicularCoefficient(
       a.x,
       a.y,
       a.x + a.height * -sinA,
@@ -91,14 +91,18 @@ export function rectIntersectRect(a: QtreeRect, b: QtreeRect): boolean {
   const cosB = b.rad ? Math.cos(b.rad) : 1;
   const sinA = a.rad ? Math.sin(a.rad) : 0;
   const sinB = b.rad ? Math.sin(b.rad) : 0;
-  let intersected = false;
   let r1 = a;
   let r2 = b;
   let cos1 = cosA;
-  let cos2 = cosB;
   let sin1 = sinA;
+  let cos2 = cosB;
   let sin2 = sinB;
+  let intersected = true;
   for (let j = 0; j < 2; j++) {
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minY = Infinity;
+    let maxY = -Infinity;
     for (let i = 0; i < 4; i++) {
       const pointX =
         r2.x +
@@ -106,7 +110,7 @@ export function rectIntersectRect(a: QtreeRect, b: QtreeRect): boolean {
         r2.height * -sin2 * Math.floor(i / 2);
       const pointY =
         r2.y + r2.width * sin2 * (i % 2) + r2.height * cos2 * Math.floor(i / 2);
-      const coeffX = perpendicularCoefficient(
+      const coeffX = _perpendicularCoefficient(
         r1.x,
         r1.y,
         r1.x + r1.width * cos1,
@@ -114,7 +118,7 @@ export function rectIntersectRect(a: QtreeRect, b: QtreeRect): boolean {
         pointX,
         pointY,
       );
-      const coeffY = perpendicularCoefficient(
+      const coeffY = _perpendicularCoefficient(
         r1.x,
         r1.y,
         r1.x + r1.height * -sin1,
@@ -122,16 +126,17 @@ export function rectIntersectRect(a: QtreeRect, b: QtreeRect): boolean {
         pointX,
         pointY,
       );
-      intersected ||=
-        (coeffX >= 0 && coeffX <= 1) || (coeffY >= 0 && coeffY <= 1);
-      if (intersected) break;
+      minX = coeffX < minX ? coeffX : minX;
+      maxX = coeffX > maxX ? coeffX : maxX;
+      minY = coeffY < minY ? coeffY : minY;
+      maxY = coeffY > maxY ? coeffY : maxY;
     }
-    if (intersected) break;
+    intersected &&= maxX >= 0 && minX <= 1 && maxY >= 0 && minY <= 1;
     r1 = b;
     r2 = a;
     cos1 = cosB;
-    cos2 = cosA;
     sin1 = sinB;
+    cos2 = cosA;
     sin2 = sinA;
   }
   return intersected;
@@ -185,7 +190,7 @@ export function pointIntersectPoint(a: QtreePoint, b: QtreePoint): boolean {
   return a.x == b.x && a.y == b.y;
 }
 export function circleIntersectRay(a: QtreeCircle, b: QtreeLine): boolean {
-  const t = perpendicularCoefficient(b.x1, b.y1, b.x2, b.x2, a.x, a.y);
+  const t = _perpendicularCoefficient(b.x1, b.y1, b.x2, b.x2, a.x, a.y);
   const x = b.x1 + t * (b.x2 - b.x1);
   const y = b.y1 + t * (b.y2 - b.y1);
   return (
@@ -218,25 +223,25 @@ export function rectContainCircle(a: QtreeRect, b: QtreeCircle): boolean {
 export function rectIntersectCircle(a: QtreeRect, b: QtreeCircle): boolean {
   const cos = a.rad ? Math.cos(a.rad) : 1;
   const sin = a.rad ? Math.sin(a.rad) : 0;
-  const t = perpendicularCoefficient(
-    a.x,
-    a.y,
-    a.x + a.width * cos,
-    a.y + a.width * sin,
-    b.x,
-    b.y,
-  );
-  const u = perpendicularCoefficient(
-    a.x,
-    a.y,
-    a.x + a.height * -sin,
-    a.y + a.height * cos,
-    b.x,
-    b.y,
-  );
   const circleXTransformed = (b.x - a.x) * cos + (b.y - a.y) * sin;
   const circleYTransformed = (b.x - a.x) * -sin + (b.y - a.y) * cos;
-  return (t >= 0 && t <= 1) || (u >= 0 && u <= 1)
+  const s = _perpendicularCoefficient(
+    0,
+    0,
+    a.width,
+    0,
+    circleXTransformed,
+    circleYTransformed,
+  );
+  const t = _perpendicularCoefficient(
+    0,
+    0,
+    0,
+    a.height,
+    circleXTransformed,
+    circleYTransformed,
+  );
+  return (s >= 0 && s <= 1) || (t >= 0 && t <= 1)
     ? (a.width / 2 - circleXTransformed) ** 2 < (a.width / 2 + b.radius) ** 2 &&
         (a.height / 2 - circleYTransformed) ** 2 <
           (a.height / 2 + b.radius) ** 2
@@ -284,24 +289,53 @@ export function lineIntersectPoint(a: QtreeLine, b: QtreePoint): boolean {
   const u = (b.y - a.y1) / (a.y2 - a.y1);
   return t == u && t >= 0 && t <= 1;
 }
-function _rectContainPoint(rect: QtreeRect, x: number, y: number): boolean {
-  const cos = rect.rad ? Math.cos(rect.rad) : 1;
-  const sin = rect.rad ? Math.sin(rect.rad) : 0;
+function _rectContainPoint(
+  rx: number,
+  ry: number,
+  rw: number,
+  rh: number,
+  x: number,
+  y: number,
+) {
   return (
-    (rect.width / 2 - ((x - rect.x) * cos + (y - rect.y) * sin)) ** 2 <=
-      (rect.width / 2) ** 2 &&
-    (rect.height / 2 - ((x - rect.x) * -sin + (y - rect.y) * cos)) ** 2 <=
-      (rect.height / 2) ** 2
+    (rx + rw / 2 - x) * (rx + rw / 2 - x) <= (rw * rw) / 4 &&
+    (ry + rh / 2 - y) * (ry + rh / 2 - y) <= (rh * rh) / 4
   );
 }
-export function rectContainPoint(a: QtreeRect, b: QtreePoint): boolean {
-  return _rectContainPoint(a, b.x, b.y);
+export function rectContainPoint(rect: QtreeRect, point: QtreePoint): boolean {
+  const cos = rect.rad ? Math.cos(rect.rad) : 1;
+  const sin = rect.rad ? Math.sin(rect.rad) : 0;
+  return _rectContainPoint(
+    0,
+    0,
+    rect.width,
+    rect.height,
+    (point.x - rect.x) * cos + (point.y - rect.y) * sin,
+    (point.x - rect.x) * -sin + (point.y - rect.y) * cos,
+  );
 }
 export function rectIntersectLine(a: QtreeRect, b: QtreeLine): boolean {
-  if (_rectContainPoint(a, b.x1, b.y1) || _rectContainPoint(a, b.x2, b.y2))
-    return true;
   const cos = a.rad ? Math.cos(a.rad) : 1;
   const sin = a.rad ? Math.sin(a.rad) : 0;
+  if (
+    _rectContainPoint(
+      0,
+      0,
+      a.width,
+      a.height,
+      (b.x1 - a.x) * cos + (b.y1 - a.y) * sin,
+      (b.x1 - a.x) * -sin + (b.y1 - a.y) * cos,
+    ) ||
+    _rectContainPoint(
+      0,
+      0,
+      a.width,
+      a.height,
+      (b.x2 - a.x) * cos + (b.y2 - a.y) * sin,
+      (b.x2 - a.x) * -sin + (b.y2 - a.y) * cos,
+    )
+  )
+    return true;
   for (let i = 0; i < 4; i++) {
     const x1 =
       a.x + a.width * cos * +(i == 1 || i == 2) + a.height * -sin * +(i > 1);
@@ -316,7 +350,7 @@ export function rectIntersectLine(a: QtreeRect, b: QtreeLine): boolean {
   return false;
 }
 export function circleIntersectLine(a: QtreeCircle, b: QtreeLine): boolean {
-  const t = perpendicularCoefficient(b.x1, b.y1, b.x2, b.y2, a.x, a.y);
+  const t = _perpendicularCoefficient(b.x1, b.y1, b.x2, b.y2, a.x, a.y);
   const x = b.x1 + t * (b.x2 - b.x1);
   const y = b.y1 + t * (b.y2 - b.y1);
   const ratio = Math.sqrt(

@@ -1,0 +1,7 @@
+{
+  "name": "quadtree",
+  "exports": {
+    ".": "./quadtree.ts",
+    "./shapes": "./shapes.ts"
+  }
+}
