@@ -18,11 +18,12 @@ const Mouse: {
   isDown: [],
 };
 let canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D;
-let displayBuff: string[] = [];
+let displayBuff = "";
 
 function main(): void {
   const c = document.querySelector("canvas");
   if (!c) return;
+  c.style.imageRendering = "pixelated";
   canvas = c;
   const context = canvas.getContext("2d");
   if (!context) return;
@@ -48,25 +49,31 @@ function main(): void {
   }
 
   update();
-  maximizeCanvas();
   genCalcUI(world, qt);
+  maximizeCanvas();
 }
 
 globalThis.onload = main;
 globalThis.onresize = maximizeCanvas;
 globalThis.onpointermove = (e) => {
-  Mouse.x[e.pointerId] = e.x;
-  Mouse.y[e.pointerId] = e.y;
-  pointer2Screen(Mouse, e.pointerId);
+  setMousePos(e);
 };
 globalThis.onpointerdown = (e) => {
+  setMousePos(e);
   Mouse.justPressed[e.pointerId] = true;
   Mouse.isDown[e.pointerId] = true;
 };
 globalThis.onpointerup = (e) => {
+  setMousePos(e);
   Mouse.justReleased[e.pointerId] = true;
   Mouse.isDown[e.pointerId] = false;
 };
+
+function setMousePos(e: PointerEvent): void {
+  Mouse.x[e.pointerId] = e.x;
+  Mouse.y[e.pointerId] = e.y;
+  pointer2Screen(Mouse, e.pointerId);
+}
 
 function maximizeCanvas(): void {
   if (canvas.width / canvas.height > innerWidth / innerHeight) {
@@ -121,8 +128,16 @@ function genCalcUI(world: ecs.World, quadtree: qtree.Quadtree): void {
     ".",
     "=",
   ];
-  const unitWidth = 10;
-  const unitHeight = 10;
+  const unitWidth = 20;
+  const unitHeight = 20;
+
+  let numCol = -Infinity;
+  for (let i = 0, l = elmPerRow.length; i < l; i++) {
+    numCol = elmPerRow[i] > numCol ? elmPerRow[i] : numCol;
+  }
+
+  canvas.width = unitWidth * numCol;
+  canvas.height = unitHeight * elmPerRow.length;
 
   let start = 0;
   for (let i = 0, l = elmPerRow.length; i < l; i++) {
@@ -203,36 +218,153 @@ function highlightHovered(world: ecs.World, quadtree: qtree.Quadtree): void {
       ctx.rect(rect.x, rect.y, rect.width, rect.height);
       if (!Mouse.justReleased[i]) return;
       const t = world.getComponent(rect.owner, Text).content;
-      switch (t) {
-        case "=": {
-          for (let i = 0, l = displayBuff.length; i < l; i++) {
-            switch (displayBuff[i]) {
-              case "×":
-                displayBuff[i] = "*";
-                break;
-              case "÷":
-                displayBuff[i] = "/";
-                break;
-              case "%":
-                displayBuff[i] = "/100";
-                break;
-            }
-          }
-          displayBuff = String(eval(displayBuff.join(""))).split("");
-          break;
-        }
-        case "C":
-          displayBuff.length = 0;
-          break;
-        default:
-          displayBuff.push(t);
-      }
+      handleInput(t);
     });
   }
-  display.content = displayBuff.join("");
+  display.content = displayBuff;
   while (ctx.measureText(display.content).width >= displayRect.width) {
     display.content = display.content.slice(1);
   }
   ctx.stroke();
   ctx.strokeStyle = oldStroke;
+}
+
+function handleInput(t: string): void {
+  switch (t) {
+    case "=":
+      displayBuff = evaluate(displayBuff).toString();
+      break;
+    case "C":
+      displayBuff = "";
+      break;
+    default:
+      displayBuff += t;
+  }
+}
+
+enum TokenTypes {
+  Number,
+  Operator,
+}
+
+type Token = { type: TokenTypes; value: string };
+
+function tokenize(buff: string): Token[] {
+  const tokens: Token[] = [];
+  let tokenValue = "";
+  for (let i = 0, l = buff.length; i < l; i++) {
+    switch (buff[i]) {
+      case "-":
+        if (tokenValue.length) {
+          tokens.push({ type: TokenTypes.Number, value: tokenValue });
+          tokens.push({ type: TokenTypes.Operator, value: "+" });
+        }
+        tokenValue = "-";
+        break;
+      case "%":
+      case "+":
+      case "×":
+      case "÷":
+        if (tokenValue.length) {
+          tokens.push({ type: TokenTypes.Number, value: tokenValue });
+          tokenValue = "";
+        }
+        tokens.push({ type: TokenTypes.Operator, value: buff[i] });
+        break;
+      default:
+        tokenValue += buff[i];
+        break;
+    }
+  }
+  if (tokenValue.length) {
+    tokens.push({ type: TokenTypes.Number, value: tokenValue });
+  }
+  return tokens;
+}
+
+type Expr = {
+  lhs: string | Expr;
+  op: string;
+  rhs: string | Expr;
+};
+
+function parse(tokens: Token[]): Expr {
+  let res: Expr = { lhs: "", op: "", rhs: "" };
+  let current: Expr = res;
+  for (let i = 0, l = tokens.length; i < l; i++) {
+    switch (tokens[i].type) {
+      case TokenTypes.Number:
+        if (current.lhs == "" && i == 0) {
+          current.lhs = tokens[i].value;
+        } else if (current.rhs == "") {
+          current.rhs = tokens[i].value;
+        }
+        break;
+      case TokenTypes.Operator:
+        if (current.op == "" && tokens[i].value != "%") {
+          current.op = tokens[i].value;
+          break;
+        }
+        switch (tokens[i].value) {
+          case "%":
+            if (
+              current.rhs == "" &&
+              typeof current.lhs == "string" &&
+              current.lhs != ""
+            ) {
+              current.lhs = (Number(current.lhs) / 100).toString();
+            } else if (typeof current.rhs == "string" && current.rhs != "") {
+              current.rhs = (Number(current.rhs) / 100).toString();
+            }
+            break;
+          case "-":
+          case "+":
+            current = { lhs: res, op: tokens[i].value, rhs: "" };
+            res = current;
+            break;
+          case "×":
+          case "÷":
+            current.rhs = { lhs: current.rhs, op: tokens[i].value, rhs: "" };
+            current = current.rhs;
+            break;
+        }
+    }
+  }
+  return res;
+}
+
+function calculate(e: Expr): number {
+  let lhs = 0;
+  let rhs = 0;
+  if (typeof e.lhs == "object") {
+    lhs = calculate(e.lhs);
+  } else {
+    lhs = Number(e.lhs);
+  }
+  if (typeof e.rhs == "object") {
+    rhs = calculate(e.rhs);
+  } else {
+    rhs = Number(e.rhs);
+  }
+  switch (e.op) {
+    case "×":
+      lhs *= rhs;
+      break;
+    case "÷":
+      lhs /= rhs;
+      break;
+    case "-":
+      lhs -= rhs;
+      break;
+    case "+":
+      lhs += rhs;
+      break;
+  }
+  return lhs;
+}
+
+function evaluate(buff: string): number {
+  const tokens = tokenize(buff);
+  const ast = parse(tokens);
+  return calculate(ast);
 }
