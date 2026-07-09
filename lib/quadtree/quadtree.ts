@@ -54,7 +54,7 @@ export class Quadtree {
     this._maxDepth = maxDepth;
   }
 
-  setBoundary(boundary: QtreeRect) {
+  setBoundary(boundary: QtreeRect): void {
     for (const entry of this._bounds) {
       this._unusedRects.push(entry[1]);
       this._bounds.delete(entry[0]);
@@ -63,7 +63,7 @@ export class Quadtree {
     this.update();
   }
 
-  insert(shape: QtreeShapes) {
+  insert(shape: QtreeShapes): void {
     this._insert(shape);
   }
 
@@ -129,7 +129,7 @@ export class Quadtree {
     return res;
   }
 
-  update() {
+  update(): void {
     for (const entry of this._storage) {
       for (const shape of entry[1]) {
         const index = this._index(shape);
@@ -140,34 +140,35 @@ export class Quadtree {
     }
   }
 
-  eraseIntersected<S extends QtreeShapes>(shape: S) {
+  eraseIntersected<S extends QtreeShapes>(shape: S): void {
     this.forEach(shape, (s, store) => {
       store.delete(s);
       this._reverse.delete(s);
     });
   }
 
-  eraseExact(shape: QtreeShapes) {
+  eraseExact(shape: QtreeShapes): void {
     const index = this._reverse.get(shape);
     this._reverse.delete(shape);
     if (index) this._storage.get(index)?.delete(shape);
   }
 
-  clear() {
+  clear(): void {
     for (const v of this._storage) {
       v[1].clear();
     }
     this._reverse.clear();
   }
 
-  size() {
+  size(): number {
     return this._reverse.size;
   }
 
-  drawTree(ctx: CanvasRenderingContext2D, color = "green") {
+  drawTree(ctx: CanvasRenderingContext2D, color = "green"): void {
+    ctx.beginPath();
+    const oldStroke = ctx.strokeStyle;
+    ctx.strokeStyle = color;
     for (const value of this._storage) {
-      ctx.beginPath();
-      ctx.strokeStyle = color;
       for (const shape of value[1]) {
         if (isRect(shape)) {
           const c = shape.rad ? Math.cos(shape.rad) : 1;
@@ -196,8 +197,9 @@ export class Quadtree {
         ctx.moveTo(bound.x, bound.y);
         ctx.rect(bound.x, bound.y, bound.width, bound.height);
       }
-      ctx.stroke();
     }
+    ctx.stroke();
+    ctx.strokeStyle = oldStroke;
   }
 
   private _index<S extends QtreeShapes>(shape: S): number {
@@ -249,7 +251,7 @@ export class Quadtree {
     shape: S,
     op: (corresponding_storage: MapValue<typeof this._storage>) => void,
     rectIntersectShapeFn: (a: QtreeRect, b: S) => boolean = rectIntersectShape,
-  ) {
+  ): void {
     const queue: number[] = [];
     queue.push(0, 0);
     while (queue.length) {

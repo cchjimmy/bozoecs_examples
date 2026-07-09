@@ -3,5 +3,8 @@
   "exports": {
     ".": "./quadtree.ts",
     "./shapes": "./shapes.ts"
+  },
+  "compilerOptions": {
+    "lib": ["dom", "esnext"]
   }
 }

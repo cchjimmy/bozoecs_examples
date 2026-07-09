@@ -1,10 +1,5 @@
 import { World, entityT } from "bozoecs";
-import {
-  QtreeRect,
-  QtreeCircle,
-  QtreeLine,
-  QtreePoint,
-} from "../quadtree/quadtree.ts";
+import { QtreeRect, QtreeCircle, QtreeLine, QtreePoint } from "quadtree";
 
 type EntityId = { owner: entityT };
 export const QtRect: QtreeRect & EntityId = {
@@ -33,10 +28,7 @@ export const QtPoint: QtreePoint & EntityId = {
   owner: -1,
 };
 export type QtShapes =
-  | typeof QtRect
-  | typeof QtLine
-  | typeof QtCircle
-  | typeof QtPoint;
+  typeof QtRect | typeof QtLine | typeof QtCircle | typeof QtPoint;
 export const Stats = {
   attackDamage: 0,
   physicalDefence: 0,
