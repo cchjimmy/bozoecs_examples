@@ -7,12 +7,16 @@ const Text = { x: 0, y: 0, content: "", fontSize: 8 };
 const Mouse: {
   x: number[];
   y: number[];
+  releaseX: number[];
+  releaseY: number[];
   justPressed: boolean[];
   justReleased: boolean[];
   isDown: boolean[];
 } = {
   x: [],
   y: [],
+  releaseX: [],
+  releaseY: [],
   justPressed: [],
   justReleased: [],
   isDown: [],
@@ -32,7 +36,7 @@ function main(): void {
   const world = new ecs.World();
   const qt = new qtree.Quadtree();
 
-  const systems = [drawRects, drawText, highlightHovered];
+  const systems = [drawRects, drawText, highlightHovered, updateDisplay];
 
   function update() {
     requestAnimationFrame(update);
@@ -65,6 +69,9 @@ globalThis.onpointerdown = (e) => {
 };
 globalThis.onpointerup = (e) => {
   setMousePos(e);
+  Mouse.releaseX[e.pointerId] = Mouse.x[e.pointerId];
+  Mouse.releaseY[e.pointerId] = Mouse.y[e.pointerId];
+  Mouse.x[e.pointerId] = Mouse.y[e.pointerId] = -1;
   Mouse.justReleased[e.pointerId] = true;
   Mouse.isDown[e.pointerId] = false;
 };
@@ -205,10 +212,6 @@ function pointer2Screen(mouse: typeof Mouse, pointerId: number): void {
 }
 
 function highlightHovered(world: ecs.World, quadtree: qtree.Quadtree): void {
-  const displayEntity = world.query({ and: [Text, Rect] })[0];
-  if (displayEntity == undefined) return;
-  const display = world.getComponent(displayEntity, Text);
-  const displayRect = world.getComponent(displayEntity, Rect);
   ctx.beginPath();
   const oldStroke = ctx.strokeStyle;
   ctx.strokeStyle = "red";
@@ -216,17 +219,29 @@ function highlightHovered(world: ecs.World, quadtree: qtree.Quadtree): void {
     quadtree.query({ x: Mouse.x[i], y: Mouse.y[i] }).forEach((e) => {
       const rect = e as typeof Rect;
       ctx.rect(rect.x, rect.y, rect.width, rect.height);
-      if (!Mouse.justReleased[i]) return;
-      const t = world.getComponent(rect.owner, Text).content;
-      handleInput(t);
     });
+    if (!Mouse.justReleased[i]) continue;
+    quadtree
+      .query({ x: Mouse.releaseX[i], y: Mouse.releaseY[i] })
+      .forEach((e) => {
+        const rect = e as typeof Rect;
+        const t = world.getComponent(rect.owner, Text).content;
+        handleInput(t);
+      });
   }
+  ctx.stroke();
+  ctx.strokeStyle = oldStroke;
+}
+
+function updateDisplay(world: ecs.World): void {
+  const displayEntity = world.query({ and: [Text, Rect] })[0];
+  if (displayEntity == undefined) return;
+  const display = world.getComponent(displayEntity, Text);
+  const displayRect = world.getComponent(displayEntity, Rect);
   display.content = displayBuff;
   while (ctx.measureText(display.content).width >= displayRect.width) {
     display.content = display.content.slice(1);
   }
-  ctx.stroke();
-  ctx.strokeStyle = oldStroke;
 }
 
 function handleInput(t: string): void {
@@ -255,20 +270,14 @@ function tokenize(buff: string): Token[] {
   for (let i = 0, l = buff.length; i < l; i++) {
     switch (buff[i]) {
       case "-":
-        if (tokenValue.length) {
-          tokens.push({ type: TokenTypes.Number, value: tokenValue });
-          tokens.push({ type: TokenTypes.Operator, value: "+" });
-        }
-        tokenValue = "-";
-        break;
       case "%":
       case "+":
       case "×":
       case "÷":
         if (tokenValue.length) {
           tokens.push({ type: TokenTypes.Number, value: tokenValue });
-          tokenValue = "";
         }
+        tokenValue = "";
         tokens.push({ type: TokenTypes.Operator, value: buff[i] });
         break;
       default:
@@ -282,50 +291,74 @@ function tokenize(buff: string): Token[] {
   return tokens;
 }
 
-type Expr = {
+type Expr = Partial<{
   lhs: string | Expr;
   op: string;
   rhs: string | Expr;
-};
+}>;
 
 function parse(tokens: Token[]): Expr {
-  let res: Expr = { lhs: "", op: "", rhs: "" };
+  let res: Expr = {};
   let current: Expr = res;
+  let last: Expr = res;
   for (let i = 0, l = tokens.length; i < l; i++) {
     switch (tokens[i].type) {
       case TokenTypes.Number:
-        if (current.lhs == "" && i == 0) {
+        if (current.lhs == undefined && current.op == undefined) {
           current.lhs = tokens[i].value;
-        } else if (current.rhs == "") {
+        } else if (current.rhs == undefined) {
           current.rhs = tokens[i].value;
         }
         break;
       case TokenTypes.Operator:
-        if (current.op == "" && tokens[i].value != "%") {
+        if (current.op == undefined && tokens[i].value != "%") {
           current.op = tokens[i].value;
           break;
         }
         switch (tokens[i].value) {
           case "%":
             if (
-              current.rhs == "" &&
-              typeof current.lhs == "string" &&
-              current.lhs != ""
+              current.lhs != undefined &&
+              current.op == undefined &&
+              current.rhs == undefined
             ) {
               current.lhs = (Number(current.lhs) / 100).toString();
-            } else if (typeof current.rhs == "string" && current.rhs != "") {
+            } else if (current.rhs != undefined) {
               current.rhs = (Number(current.rhs) / 100).toString();
             }
             break;
           case "-":
           case "+":
-            current = { lhs: res, op: tokens[i].value, rhs: "" };
-            res = current;
+            if (current.rhs != undefined) {
+              current = { lhs: res, op: tokens[i].value };
+              last = res;
+              res = current;
+            } else {
+              current.rhs = { op: tokens[i].value };
+              last = current;
+              current = current.rhs;
+            }
             break;
           case "×":
           case "÷":
-            current.rhs = { lhs: current.rhs, op: tokens[i].value, rhs: "" };
-            current = current.rhs;
+            if (current.op == "-" || current.op == "+") {
+              current.rhs = {
+                lhs: current.rhs,
+                op: tokens[i].value,
+              };
+              last = current;
+              current = current.rhs;
+            } else {
+              const temp = { lhs: current, op: tokens[i].value };
+              if (last.lhs == current) {
+                last.lhs = temp;
+              } else if (last.rhs == current) {
+                last.rhs = temp;
+              } else {
+                res = temp;
+              }
+              current = temp;
+            }
             break;
         }
     }
@@ -339,12 +372,12 @@ function calculate(e: Expr): number {
   if (typeof e.lhs == "object") {
     lhs = calculate(e.lhs);
   } else {
-    lhs = Number(e.lhs);
+    lhs = Number(e.lhs) || 0;
   }
   if (typeof e.rhs == "object") {
     rhs = calculate(e.rhs);
   } else {
-    rhs = Number(e.rhs);
+    rhs = Number(e.rhs) || 0;
   }
   switch (e.op) {
     case "×":
