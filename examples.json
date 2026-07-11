@@ -3,50 +3,42 @@
     "name": "particles",
     "url": "examples/particles",
     "desc": "1000 particles test.",
-    "supports": {
-      "desktop": true,
-      "mobile": true
-    },
+    "supports": ["desktop", "mobile"],
     "developers": ["cchjimmy"]
   },
   {
     "name": "pong",
     "url": "examples/pong",
     "desc": "Endless pong.",
-    "supports": {
-      "desktop": true,
-      "mobile": true
-    },
+    "supports": ["desktop", "mobile"],
     "developers": ["cchjimmy"]
   },
   {
     "name": "flappySquare",
     "url": "examples/flappySquare",
     "desc": "Avoid obstacles to get high score.",
-    "supports": {
-      "desktop": true,
-      "mobile": true
-    },
+    "supports": ["desktop", "mobile"],
     "developers": ["cchjimmy"]
   },
   {
     "name": "snake",
     "url": "examples/snake",
     "desc": "Eat food to get high score.",
-    "supports": {
-      "desktop": true,
-      "mobile": true
-    },
+    "supports": ["desktop", "mobile"],
     "developers": ["cchjimmy"]
   },
   {
     "name": "blackjack",
     "url": "examples/blackjack",
     "desc": "Singleplayer blackjack.",
-    "supports": {
-      "desktop": true,
-      "mobile": true
-    },
+    "supports": ["desktop", "mobile"],
+    "developers": ["cchjimmy"]
+  },
+  {
+    "name": "calculator",
+    "url": "examples/calculator",
+    "desc": "Basic calculator with layout akin to the Firefox calculator.",
+    "supports": ["desktop", "mobile"],
     "developers": ["cchjimmy"]
   }
 ]

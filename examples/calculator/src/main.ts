@@ -250,16 +250,18 @@ function drawText(world: ecs.World): void {
         const diff = cursor.position - (start + i * charsPerRow);
         if (diff >= 0 && diff <= charsPerRow) {
           ctx.fillRect(
-            p.x +
-              t.x +
-              ctx.measureText(
-                t.content.slice(
-                  start + i * charsPerRow,
-                  start + i * charsPerRow + diff,
-                ),
-              ).width,
+            Math.floor(
+              p.x +
+                t.x +
+                ctx.measureText(
+                  t.content.slice(
+                    start + i * charsPerRow,
+                    start + i * charsPerRow + diff,
+                  ),
+                ).width,
+            ),
             p.y + t.y + i * txtMetric.fontBoundingBoxAscent,
-            2,
+            1,
             -txtMetric.fontBoundingBoxAscent,
           );
         }
@@ -308,23 +310,25 @@ function handleButtons(world: ecs.World, quadtree: qtree.Quadtree): void {
     b.justPressed = b.justReleased = b.isHovered = b.isDown = false;
   });
   for (let i = 0, l = Mouse.x.length; i < l; i++) {
-    quadtree.query({ x: Mouse.x[i], y: Mouse.y[i] }).forEach((shape) => {
-      const rect = shape as typeof Rect;
-      if (!world.hasComponent(rect.owner, Button)) return;
-      const b = world.getComponent(rect.owner, Button);
-      b.isHovered = true;
-      b.isDown = Mouse.isDown[i];
-      b.justPressed = Mouse.justPressed[i];
-    });
-    if (!Mouse.justReleased[i]) return;
-    quadtree
-      .query({ x: Mouse.releaseX[i], y: Mouse.releaseY[i] })
-      .forEach((shape) => {
+    if (!Mouse.justReleased[i]) {
+      quadtree.query({ x: Mouse.x[i], y: Mouse.y[i] }).forEach((shape) => {
         const rect = shape as typeof Rect;
         if (!world.hasComponent(rect.owner, Button)) return;
         const b = world.getComponent(rect.owner, Button);
-        b.justReleased = true;
+        b.isHovered = true;
+        b.isDown = Mouse.isDown[i];
+        b.justPressed = Mouse.justPressed[i];
       });
+    } else {
+      quadtree
+        .query({ x: Mouse.releaseX[i], y: Mouse.releaseY[i] })
+        .forEach((shape) => {
+          const rect = shape as typeof Rect;
+          if (!world.hasComponent(rect.owner, Button)) return;
+          const b = world.getComponent(rect.owner, Button);
+          b.justReleased = true;
+        });
+    }
   }
 }
 

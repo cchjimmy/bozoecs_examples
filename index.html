@@ -31,12 +31,7 @@
         linkToExample.href = example.url;
         linkToExample.innerText = example.name;
         temp.length = 0;
-        const supports = Object.keys(example.supports)
-          .reduce((arr, x) => {
-            if (example.supports[x]) arr.push(x);
-            return arr;
-          }, temp)
-          .join(", ");
+        const supports = example.supports.join(", ");
         let devLen = example.developers.length;
         const developers = example.developers.reduce((acc, x) => {
           const a = document.createElement("a");
