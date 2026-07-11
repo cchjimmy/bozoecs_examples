@@ -206,15 +206,15 @@ export class Quadtree {
     let index = 0;
     let depth = 1;
     let contained = true;
-    let containFn: ((r: QtreeRect, s: S) => boolean) | undefined = undefined;
+    let containFn: unknown;
     if (isRect(shape)) {
-      containFn = rectContainRect as (r: QtreeRect, s: S) => boolean;
+      containFn = rectContainRect;
     } else if (isCircle(shape)) {
-      containFn = rectContainCircle as (r: QtreeRect, s: S) => boolean;
+      containFn = rectContainCircle;
     } else if (isLine(shape)) {
-      containFn = rectContainLine as (r: QtreeRect, s: S) => boolean;
+      containFn = rectContainLine;
     } else if (isPoint(shape)) {
-      containFn = rectContainPoint as (r: QtreeRect, s: S) => boolean;
+      containFn = rectContainPoint;
     }
     if (containFn == undefined) throw new Error();
     while (contained && depth <= this._maxDepth) {
@@ -237,7 +237,8 @@ export class Quadtree {
           childBound.height = parentBound.height / 2;
           this._bounds.set(id, childBound);
         }
-        if (!containFn(childBound, shape)) continue;
+        if (!(containFn as (r: QtreeRect, s: S) => boolean)(childBound, shape))
+          continue;
         index = id;
         contained = true;
         depth++;

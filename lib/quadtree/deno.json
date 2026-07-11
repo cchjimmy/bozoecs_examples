@@ -5,6 +5,9 @@
     "./shapes": "./shapes.ts"
   },
   "compilerOptions": {
-    "lib": ["dom", "esnext"]
+    "lib": ["dom", "esnext", "deno.ns", "deno.unstable"]
+  },
+  "imports": {
+    "@std/assert": "jsr:@std/assert@^1.0.19"
   }
 }

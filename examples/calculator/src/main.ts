@@ -4,6 +4,15 @@ import * as qtree from "quadtree";
 const Position = { x: 0, y: 0 };
 const Rect = { x: 0, y: 0, width: 10, height: 10, owner: -1 };
 const Text = { x: 0, y: 0, content: "", fontSize: 8 };
+const Button = {
+  isDown: false,
+  justPressed: false,
+  justReleased: false,
+  isHovered: false,
+};
+const Cursor = {
+  position: 0,
+};
 const Mouse: {
   x: number[];
   y: number[];
@@ -22,7 +31,6 @@ const Mouse: {
   isDown: [],
 };
 let canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D;
-let displayBuff = "";
 
 function main(): void {
   const c = document.querySelector("canvas");
@@ -36,12 +44,23 @@ function main(): void {
   const world = new ecs.World();
   const qt = new qtree.Quadtree();
 
-  const systems = [drawRects, drawText, highlightHovered, updateDisplay];
+  const systems = [
+    highlightHovered,
+    drawText,
+    drawRects,
+    handleButtons,
+    handleCursors,
+    handleButtonInput,
+  ];
 
   function update() {
     requestAnimationFrame(update);
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const oldFill = ctx.fillStyle;
+    ctx.fillStyle = "rgb(100,100,100)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = oldFill;
     // qt.drawTree(ctx);
+    ctx.fillStyle = "white";
     for (const sys of systems) {
       sys(world, qt);
     }
@@ -71,7 +90,7 @@ globalThis.onpointerup = (e) => {
   setMousePos(e);
   Mouse.releaseX[e.pointerId] = Mouse.x[e.pointerId];
   Mouse.releaseY[e.pointerId] = Mouse.y[e.pointerId];
-  Mouse.x[e.pointerId] = Mouse.y[e.pointerId] = -1;
+  Mouse.x[e.pointerId] = Mouse.y[e.pointerId] = NaN;
   Mouse.justReleased[e.pointerId] = true;
   Mouse.isDown[e.pointerId] = false;
 };
@@ -93,10 +112,10 @@ function maximizeCanvas(): void {
 }
 
 function genCalcUI(world: ecs.World, quadtree: qtree.Quadtree): void {
-  const elmPerRow = [1, 3, 4, 4, 4, 3];
+  const elmPerRow = [3, 3, 4, 4, 4, 3];
   const elmWidthSpan = [
     // row 1
-    4,
+    0.5, 3, 0.5,
     // row 2
     2, 1, 1,
     // row 3
@@ -110,7 +129,9 @@ function genCalcUI(world: ecs.World, quadtree: qtree.Quadtree): void {
   ];
   const elmText = [
     // row 1
+    "<",
     "",
+    ">",
     // row 2
     "C",
     "%",
@@ -161,18 +182,22 @@ function genCalcUI(world: ecs.World, quadtree: qtree.Quadtree): void {
         owner: elm,
       });
       world.addComponent(elm, Text, {
-        x: 2,
         y: unitHeight - 1,
         content: elmText[start + j],
-        fontSize: unitHeight,
+        fontSize: unitHeight - 3,
       });
-      quadtree.insert({
-        x: unitWidth * widthSum,
-        y: unitHeight * i,
-        width: unitWidth * elmWidthSpan[start + j],
-        height: unitHeight,
-        owner: elm,
-      } as typeof Rect);
+      if (start + j != 1) {
+        world.addComponent(elm, Button);
+        quadtree.insert({
+          x: unitWidth * widthSum,
+          y: unitHeight * i,
+          width: unitWidth * elmWidthSpan[start + j],
+          height: unitHeight,
+          owner: elm,
+        } as typeof Rect);
+      } else {
+        world.addComponent(elm, Cursor);
+      }
       widthSum += elmWidthSpan[start + j];
     }
     start += elmPerRow[i];
@@ -194,7 +219,73 @@ function drawText(world: ecs.World): void {
     const p = world.getComponent(e, Position);
     const t = world.getComponent(e, Text);
     ctx.font = `${t.fontSize}px sans`;
-    ctx.fillText(t.content, p.x + t.x, p.y + t.y);
+    if (!world.hasComponent(e, Rect)) {
+      ctx.fillText(t.content, p.x + t.x, p.y + t.y);
+      return;
+    }
+    const r = world.getComponent(e, Rect);
+    const txtMetric = ctx.measureText(t.content);
+    const numRows = Math.min(
+      Math.ceil(txtMetric.width / r.width),
+      Math.floor(r.height / txtMetric.fontBoundingBoxAscent),
+    );
+    let cursor: typeof Cursor | undefined;
+    if (world.hasComponent(e, Cursor)) {
+      cursor = world.getComponent(e, Cursor);
+    }
+    const ratio = (numRows * r.width) / ctx.measureText(t.content).width;
+    const charCount = Math.min(
+      Math.floor(t.content.length * ratio),
+      t.content.length,
+    );
+    const charsPerRow = Math.floor(charCount / numRows);
+    const start = Math.min(
+      cursor && ratio < 1
+        ? Math.max(cursor.position - Math.floor(charCount / 2), 0)
+        : 0,
+      t.content.length - charCount,
+    );
+    for (let i = 0, l = numRows; i < l; i++) {
+      if (cursor) {
+        const diff = cursor.position - (start + i * charsPerRow);
+        if (diff >= 0 && diff <= charsPerRow) {
+          ctx.fillRect(
+            p.x +
+              t.x +
+              ctx.measureText(
+                t.content.slice(
+                  start + i * charsPerRow,
+                  start + i * charsPerRow + diff,
+                ),
+              ).width,
+            p.y + t.y + i * txtMetric.fontBoundingBoxAscent,
+            2,
+            -txtMetric.fontBoundingBoxAscent,
+          );
+        }
+      }
+      ctx.fillText(
+        t.content.substring(
+          start + i * charsPerRow,
+          start + (i + 1) * charsPerRow,
+        ),
+        p.x + t.x,
+        p.y + t.y + txtMetric.fontBoundingBoxAscent * i,
+      );
+    }
+  });
+}
+
+function handleCursors(world: ecs.World): void {
+  world.query({ and: [Cursor, Text] }).forEach((e) => {
+    const c = world.getComponent(e, Cursor);
+    const t = world.getComponent(e, Text);
+    c.position =
+      c.position > t.content.length
+        ? t.content.length
+        : c.position < 0
+          ? 0
+          : c.position;
   });
 }
 
@@ -211,49 +302,90 @@ function pointer2Screen(mouse: typeof Mouse, pointerId: number): void {
   }
 }
 
-function highlightHovered(world: ecs.World, quadtree: qtree.Quadtree): void {
-  ctx.beginPath();
-  const oldStroke = ctx.strokeStyle;
-  ctx.strokeStyle = "red";
+function handleButtons(world: ecs.World, quadtree: qtree.Quadtree): void {
+  world.query({ and: [Button] }).forEach((e) => {
+    const b = world.getComponent(e, Button);
+    b.justPressed = b.justReleased = b.isHovered = b.isDown = false;
+  });
   for (let i = 0, l = Mouse.x.length; i < l; i++) {
-    quadtree.query({ x: Mouse.x[i], y: Mouse.y[i] }).forEach((e) => {
-      const rect = e as typeof Rect;
-      ctx.rect(rect.x, rect.y, rect.width, rect.height);
+    quadtree.query({ x: Mouse.x[i], y: Mouse.y[i] }).forEach((shape) => {
+      const rect = shape as typeof Rect;
+      if (!world.hasComponent(rect.owner, Button)) return;
+      const b = world.getComponent(rect.owner, Button);
+      b.isHovered = true;
+      b.isDown = Mouse.isDown[i];
+      b.justPressed = Mouse.justPressed[i];
     });
-    if (!Mouse.justReleased[i]) continue;
+    if (!Mouse.justReleased[i]) return;
     quadtree
       .query({ x: Mouse.releaseX[i], y: Mouse.releaseY[i] })
-      .forEach((e) => {
-        const rect = e as typeof Rect;
-        const t = world.getComponent(rect.owner, Text).content;
-        handleInput(t);
+      .forEach((shape) => {
+        const rect = shape as typeof Rect;
+        if (!world.hasComponent(rect.owner, Button)) return;
+        const b = world.getComponent(rect.owner, Button);
+        b.justReleased = true;
       });
   }
-  ctx.stroke();
-  ctx.strokeStyle = oldStroke;
 }
 
-function updateDisplay(world: ecs.World): void {
-  const displayEntity = world.query({ and: [Text, Rect] })[0];
-  if (displayEntity == undefined) return;
-  const display = world.getComponent(displayEntity, Text);
-  const displayRect = world.getComponent(displayEntity, Rect);
-  display.content = displayBuff;
-  while (ctx.measureText(display.content).width >= displayRect.width) {
-    display.content = display.content.slice(1);
-  }
+function highlightHovered(world: ecs.World): void {
+  ctx.beginPath();
+  const oldFill = ctx.fillStyle;
+  ctx.fillStyle = "darkorange";
+  world.query({ and: [Button, Rect, Position] }).forEach((e) => {
+    const b = world.getComponent(e, Button);
+    const r = world.getComponent(e, Rect);
+    const p = world.getComponent(e, Position);
+    if (!b.isHovered) return;
+    ctx.rect(p.x + r.x, p.y + r.y, r.width, r.height);
+  });
+  ctx.fill();
+  ctx.fillStyle = oldFill;
 }
 
-function handleInput(t: string): void {
+function handleButtonInput(world: ecs.World): void {
+  const displayEntity = world.query({ and: [Text, Cursor] })[0];
+  if (!displayEntity) return;
+  const cursor = world.getComponent(displayEntity, Cursor);
+  const txt = world.getComponent(displayEntity, Text);
+  canvas.style.cursor = "";
+  world.query({ and: [Button, Text] }).forEach((e) => {
+    const b = world.getComponent(e, Button);
+    if (b.isHovered) canvas.style.cursor = "pointer";
+    if (!b.justReleased) return;
+    const t = world.getComponent(e, Text);
+    handleInput(t.content, cursor, txt);
+  });
+}
+
+function handleInput(
+  t: string,
+  cursor: typeof Cursor,
+  displayBuff: typeof Text,
+): void {
   switch (t) {
+    case "<":
+      cursor.position--;
+      break;
+    case ">":
+      cursor.position++;
+      break;
     case "=":
-      displayBuff = evaluate(displayBuff).toString();
+      displayBuff.content = evaluate(displayBuff.content).toString();
+      cursor.position = displayBuff.content.length;
       break;
     case "C":
-      displayBuff = "";
+      displayBuff.content =
+        displayBuff.content.substring(0, cursor.position - 1) +
+        displayBuff.content.substring(cursor.position);
+      cursor.position--;
       break;
     default:
-      displayBuff += t;
+      displayBuff.content =
+        displayBuff.content.substring(0, cursor.position) +
+        t +
+        displayBuff.content.substring(cursor.position);
+      cursor.position++;
   }
 }
 
@@ -268,7 +400,8 @@ function tokenize(buff: string): Token[] {
   const tokens: Token[] = [];
   let tokenValue = "";
   for (let i = 0, l = buff.length; i < l; i++) {
-    switch (buff[i]) {
+    const char = buff.charAt(i);
+    switch (char) {
       case "-":
       case "%":
       case "+":
@@ -278,10 +411,10 @@ function tokenize(buff: string): Token[] {
           tokens.push({ type: TokenTypes.Number, value: tokenValue });
         }
         tokenValue = "";
-        tokens.push({ type: TokenTypes.Operator, value: buff[i] });
+        tokens.push({ type: TokenTypes.Operator, value: char });
         break;
       default:
-        tokenValue += buff[i];
+        tokenValue += char;
         break;
     }
   }

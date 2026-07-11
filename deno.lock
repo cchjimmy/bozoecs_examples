@@ -91,7 +91,11 @@
     ],
     "links": {
       "jsr:BozoECS": {},
-      "jsr:quadtree": {}
+      "jsr:quadtree": {
+        "dependencies": [
+          "jsr:@std/assert@^1.0.19"
+        ]
+      }
     }
   }
 }
