@@ -3,7 +3,7 @@ import * as qtree from "quadtree";
 
 const Position = { x: 0, y: 0 };
 const Rect = { x: 0, y: 0, width: 10, height: 10, owner: -1 };
-const Text = { x: 0, y: 0, content: "", fontSize: 8 };
+const Text = { x: 0, y: 0, content: "", fontSize: 8, fontFamily: "monospace" };
 const Button = {
   isDown: false,
   justPressed: false,
@@ -184,7 +184,7 @@ function genCalcUI(world: ecs.World, quadtree: qtree.Quadtree): void {
       world.addComponent(elm, Text, {
         y: unitHeight - 1,
         content: elmText[start + j],
-        fontSize: unitHeight - 3,
+        fontSize: unitHeight - 4,
       });
       if (start + j != 1) {
         world.addComponent(elm, Button);
@@ -218,7 +218,8 @@ function drawText(world: ecs.World): void {
   world.query({ and: [Position, Text] }).forEach((e) => {
     const p = world.getComponent(e, Position);
     const t = world.getComponent(e, Text);
-    ctx.font = `${t.fontSize}px sans`;
+    const fontTxt = `${t.fontSize}px ${t.fontFamily}`;
+    ctx.font != fontTxt && (ctx.font = fontTxt);
     if (!world.hasComponent(e, Rect)) {
       ctx.fillText(t.content, p.x + t.x, p.y + t.y);
       return;
@@ -243,28 +244,27 @@ function drawText(world: ecs.World): void {
       cursor && ratio < 1
         ? Math.max(cursor.position - Math.floor(charCount / 2), 0)
         : 0,
-      t.content.length - charCount,
+      t.content.length - charsPerRow,
     );
     for (let i = 0, l = numRows; i < l; i++) {
-      if (cursor) {
-        const diff = cursor.position - (start + i * charsPerRow);
-        if (diff >= 0 && diff <= charsPerRow) {
-          ctx.fillRect(
-            Math.floor(
-              p.x +
-                t.x +
-                ctx.measureText(
-                  t.content.slice(
-                    start + i * charsPerRow,
-                    start + i * charsPerRow + diff,
-                  ),
-                ).width,
-            ),
-            p.y + t.y + i * txtMetric.fontBoundingBoxAscent,
-            1,
-            -txtMetric.fontBoundingBoxAscent,
-          );
-        }
+      let diff;
+      if (
+        cursor &&
+        ((diff = cursor.position - start + i * charsPerRow),
+        diff >= 0 && diff <= charsPerRow)
+      ) {
+        ctx.fillRect(
+          Math.floor(
+            p.x +
+              t.x +
+              ctx.measureText(
+                t.content.slice(start + i * charsPerRow, cursor.position),
+              ).width,
+          ),
+          p.y + t.y + i * txtMetric.fontBoundingBoxAscent,
+          1,
+          -txtMetric.fontBoundingBoxAscent,
+        );
       }
       ctx.fillText(
         t.content.substring(
