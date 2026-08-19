@@ -14,7 +14,8 @@
     "jsr:@std/net@^1.0.6": "1.0.6",
     "jsr:@std/path@^1.1.5": "1.1.6",
     "jsr:@std/path@^1.1.6": "1.1.6",
-    "jsr:@std/streams@^1.1.1": "1.1.1"
+    "jsr:@std/streams@^1.1.1": "1.1.1",
+    "npm:@webgpu/types@~0.1.71": "0.1.71"
   },
   "jsr": {
     "@std/assert@1.0.19": {
@@ -81,13 +82,19 @@
       "integrity": "92556d350e537e9dce527a6d08f6f15be3ff65e656079dea69d15252187c7613"
     }
   },
+  "npm": {
+    "@webgpu/types@0.1.71": {
+      "integrity": "sha512-mMy8/ODcKhab808co15eW+yN+HgXoQxRQHTiBV9Mrvl1r0ufnid7YOcI+gi4eUWSWl9ezD6TW2KXccrL8HCh2A=="
+    }
+  },
   "workspace": {
     "dependencies": [
       "jsr:@std/assert@^1.0.19",
       "jsr:@std/fs@^1.0.24",
       "jsr:@std/http@^1.1.2",
       "jsr:BozoECS@*",
-      "jsr:quadtree@*"
+      "jsr:quadtree@*",
+      "npm:@webgpu/types@~0.1.71"
     ],
     "links": {
       "jsr:BozoECS": {},

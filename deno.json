@@ -6,11 +6,13 @@
     "@std/assert": "jsr:@std/assert@^1.0.19",
     "@std/fs": "jsr:@std/fs@^1.0.24",
     "@std/http": "jsr:@std/http@^1.1.2",
+    "@webgpu/types": "npm:@webgpu/types@^0.1.71",
     "bozoecs": "jsr:BozoECS",
     "quadtree": "jsr:quadtree"
   },
   "links": ["./lib/*"],
   "compilerOptions": {
-    "lib": ["dom", "esnext", "deno.ns", "deno.unstable"]
+    "lib": ["dom", "esnext", "deno.ns", "deno.unstable"],
+	"types": ["@webgpu/types"]
   }
 }

@@ -48,17 +48,17 @@ const qtree = new Quadtree();
 
 function setUp(world: World): void {
   world.clearWorld();
-  world.onAddedComponent = (_entity, _component, instance) => {
+  world.on("addedComponent", (_entity, _component, instance) => {
     if (isQtreeElm(instance)) {
       qtree.insert(instance);
     }
-  };
+  });
 
-  world.onRemoveComponent = (_entity, _component, instance) => {
+  world.on("removeComponent", (_entity, _component, instance) => {
     if (isQtreeElm(instance)) {
       qtree.eraseExact(instance);
     }
-  };
+  });
 
   const player = addPlayer(world, 0, 0);
   const cam = addCamera(world, 0, 0);

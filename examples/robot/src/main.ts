@@ -206,7 +206,7 @@ function handleAngularVelocity(world: World) {
 function handleDrawRects(world: World) {
   Ctx2D.ctx.beginPath();
   world.query({ and: [Transform, Rect] }).forEach((e) => {
-    const { x, y, rad: r } = calculateHierarchyTransform(world, e);
+    const { x, y, rad: r } = forwardKinematics(world, e);
     const rect = world.getComponent(e, Rect);
     const c = Math.cos(r);
     const s = Math.sin(r);
@@ -220,7 +220,7 @@ function handleDrawRects(world: World) {
 function handleDrawEyes(world: World) {
   world.query({ and: [Transform, Eye, Hierarchy] }).forEach((e) => {
     const eye = world.getComponent(e, Eye);
-    const { x, y } = calculateHierarchyTransform(world, e);
+    const { x, y } = forwardKinematics(world, e);
     Ctx2D.ctx.fillStyle = "lightgrey";
     Ctx2D.ctx.beginPath();
     Ctx2D.ctx.ellipse(
@@ -270,7 +270,7 @@ function handleCamera(world: World) {
   if (world.hasComponent(camEntity, Hierarchy)) {
     const h = world.getComponent(camEntity, Hierarchy);
     if (world.hasComponent(h.parent, Transform)) {
-      Object.assign(p, calculateHierarchyTransform(world, h.parent));
+      Object.assign(p, forwardKinematics(world, h.parent));
     }
   }
   const sin = Math.sin(p.rad + c.tilt);
@@ -340,7 +340,7 @@ function handlePointer(world: World) {
 function handleLookAtPointer(world: World) {
   world.query({ and: [Eye, Transform] }).forEach((e) => {
     const eye = world.getComponent(e, Eye);
-    const { x, y } = calculateHierarchyTransform(world, e);
+    const { x, y } = forwardKinematics(world, e);
     let pointerRect = -1;
     let minDistance = Number.POSITIVE_INFINITY;
     world.query({ and: [isPointer, Transform] }).forEach((e) => {
@@ -401,7 +401,7 @@ function pointerToScreen(
   if (invertY) out.y = -out.y + canvas.height;
   return out;
 }
-function calculateHierarchyTransform(
+function forwardKinematics(
   world: World,
   entity: entityT,
 ): typeof Transform {
@@ -433,9 +433,7 @@ function attach(world: World, parent: entityT, child: entityT) {
     !world.hasComponent(parent, Hierarchy) &&
       world.addComponent(parent, Hierarchy, { children: [] });
     const hp = world.getComponent(parent, Hierarchy);
-    for (let i = 0, l = hp.children.length; i < l; i++) {
-      if (hp.children[i] == child) return;
-    }
+	if (hp.children.indexOf(child) != -1) return;
     hp.children.push(child);
   }
   !world.hasComponent(child, Hierarchy) &&
@@ -458,6 +456,18 @@ function detach(world: World, parent: entityT, child: entityT) {
     world.addComponent(child, Hierarchy, { children: [] });
   const hc = world.getComponent(child, Hierarchy);
   hc.parent = -1;
+}
+function reverseKinematics(world:World, end:entityT, targetTransform:typeof Transform): typeof Transform {
+	const parts:(typeof Transform)[]=[];
+	let e = end;
+	while (world.hasComponent(e,Hierarchy)){
+		if (!world.hasComponent(e, Transform)||!world.hasComponent(e, Hierarchy))break;
+		parts.push(world.getComponent(e, Transform))
+		const p = world.getComponent(e,Hierarchy).parent;
+		if (p == -1)break
+		e = p;
+	}
+
 }
 
 // initialization

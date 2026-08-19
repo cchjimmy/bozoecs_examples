@@ -1,0 +1,1 @@
+(()=>{(async function(){let t=await navigator.gpu.requestAdapter();if(!t)return;let e=await t.requestDevice();if(!e)return;let r=document.querySelector("canvas");if(!r)return;let a=r.getContext("webgpu");a&&a.configure({device:e,format:navigator.gpu.getPreferredCanvasFormat()})})();})();

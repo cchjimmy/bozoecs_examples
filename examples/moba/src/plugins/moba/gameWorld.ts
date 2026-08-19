@@ -89,17 +89,17 @@ const qtree = new Quadtree();
 
 function setUp(world: World): void {
   world.clearWorld();
-  world.onAddedComponent = (_entity, _component, instance) => {
+  world.on("addedComponent", (_entity, _component, instance) => {
     if (isQtreeElm(instance)) {
       qtree.insert(instance);
     }
-  };
+  });
 
-  world.onRemoveComponent = (_entity, _component, instance) => {
+  world.on("removeComponent", (_entity, _component, instance) => {
     if (isQtreeElm(instance)) {
       qtree.eraseExact(instance);
     }
-  };
+  });
 
   const player = addPlayer(world, -146, 146);
   // const player = addPlayer(world, -115, 115);
@@ -143,6 +143,8 @@ const systems = [
   drawTexts,
   drawPathFindTargets,
   // () => qtree.drawTree(ctx),
+  handleMovement,
+  handleCollision,
   handleDeath,
   handleParticleEmitters,
   handlePathfind,
@@ -152,8 +154,6 @@ const systems = [
   // handleAttack,
   handleCallbacks,
   handleTimers,
-  handleMovement,
-  handleCollision,
 ];
 
 const plug = {
