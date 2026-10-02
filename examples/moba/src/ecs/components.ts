@@ -1,5 +1,5 @@
-import { World, entityT } from "bozoecs";
-import { QtreeRect, QtreeCircle, QtreeLine, QtreePoint } from "quadtree";
+import { entityT, World } from "bozoecs";
+import { QtreeCircle, QtreeLine, QtreePoint, QtreeRect } from "quadtree";
 
 type EntityId = { owner: entityT };
 export const QtRect: QtreeRect & EntityId = {
@@ -28,7 +28,10 @@ export const QtPoint: QtreePoint & EntityId = {
   owner: -1,
 };
 export type QtShapes =
-  typeof QtRect | typeof QtLine | typeof QtCircle | typeof QtPoint;
+  | typeof QtRect
+  | typeof QtLine
+  | typeof QtCircle
+  | typeof QtPoint;
 export const Stats = {
   attackDamage: 0,
   physicalDefence: 0,
@@ -46,7 +49,8 @@ export const Acceleration = { x: 0, y: 0 };
 export const IsPlayer = {};
 export const OnScreen = {};
 export const ParticleEmitter = {
-  spreadRadians: 0,
+  maxSpreadDistance: 0,
+  spreadRadians: 2 * Math.PI,
   particleEntity: -1,
   particleLifetimeSeconds: 1,
   lastEmitTimeSeconds: 0,

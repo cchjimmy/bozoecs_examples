@@ -5,7 +5,7 @@ import config from "../../config.json" with { type: "json" };
 import game from "./gameWorld.ts";
 import test from "./testWorld.ts";
 
-let main = game;
+let main = test;
 
 export default {
   run() {

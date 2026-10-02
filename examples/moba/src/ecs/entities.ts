@@ -1,21 +1,21 @@
-import { World, entityT } from "bozoecs";
+import { entityT, World } from "bozoecs";
 import {
-  Camera,
   Button,
-  Velocity,
-  Stats,
-  IsPlayer,
-  Text,
-  Graphic,
-  Rect,
-  ParticleEmitter,
   Callback,
-  Transform,
-  Color,
+  Camera,
   Circle,
+  Color,
+  Graphic,
   Health,
+  IsPlayer,
+  ParticleEmitter,
   QtCircle,
   QtRect,
+  Rect,
+  Stats,
+  Text,
+  Transform,
+  Velocity,
 } from "./components.ts";
 import { default as config } from "../../src/config.json" with { type: "json" };
 
@@ -24,12 +24,13 @@ export function addCircle(
   x: number = 0,
   y: number = 0,
   radius: number = 1,
+  useQtree: boolean = true,
 ) {
   const e = world.addEntity();
   world.addComponent(e, Transform, { x, y });
   world.addComponent(e, Color);
   world.addComponent(e, Circle, { radius });
-  world.addComponent(e, QtCircle);
+  useQtree && world.addComponent(e, QtCircle);
   return e;
 }
 export function addMinion(world: World, x: number, y: number): entityT {
@@ -53,6 +54,7 @@ export function addSpawner(
   const e = world.addEntity();
   world.addComponent(e, Transform, { x, y });
   world.addComponent(e, ParticleEmitter, {
+    maxSpreadDistance: 2,
     particleLifetimeSeconds: 10,
     particleEntity: spawnEntity,
     emitRate: spawnRate,
@@ -93,12 +95,13 @@ export function addRect(
   h = 1,
   offsetX = -w / 2,
   offsetY = -h / 2,
+  useQtree: boolean = true,
 ) {
   const e = world.addEntity();
   world.addComponent(e, Transform, { x, y });
   world.addComponent(e, Rect, { width: w, height: h, x: offsetX, y: offsetY });
   world.addComponent(e, Color);
-  world.addComponent(e, QtRect);
+  useQtree && world.addComponent(e, QtRect);
   return e;
 }
 export function addText(world: World, x: number, y: number, str: string = "") {
@@ -120,7 +123,7 @@ export function addButton(
     if (b.hovered) {
       c.fill = "lightgrey";
     }
-    if (b.pressed) {
+    if (b.isDown) {
       c.fill = "red";
     }
     if (b.clicked) {

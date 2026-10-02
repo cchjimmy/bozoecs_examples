@@ -1,3 +1,6 @@
 [submodule "lib/BozoECS"]
 	path = lib/BozoECS
 	url = https://github.com/cchjimmy/BozoECS.git
+[submodule "lib/gl-matrix"]
+	path = lib/gl-matrix
+	url = https://github.com/toji/gl-matrix.git

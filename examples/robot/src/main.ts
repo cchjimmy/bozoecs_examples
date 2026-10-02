@@ -27,11 +27,13 @@ function setUpCanvas2D() {
   return { canvas, ctx };
 }
 function setUpTime() {
-  return { dtMilli: 0, timeMilli: 0 };
+  return { dtMilli: 0, timeMilli: 0, dt: 0, time: 0 };
 }
-function updateTime(time: { dtMilli: number; timeMilli: number }) {
+function updateTime(time: ReturnType<typeof setUpTime>) {
   time.dtMilli = performance.now() - time.timeMilli;
   time.timeMilli += time.dtMilli;
+  time.dt = time.dtMilli / 1000;
+  time.time = time.timeMilli / 1000;
 }
 type pointerT = {
   pos: Map<number, vec2>;
@@ -200,7 +202,7 @@ function handleAngularVelocity(world: World) {
   world.query({ and: [Transform, AngularVelocity] }).forEach((e) => {
     const t = world.getComponent(e, Transform);
     const av = world.getComponent(e, AngularVelocity);
-    t.rad += (av.radPerSecond * Time.dtMilli) / 1000;
+    t.rad += (av.radPerSecond * Time.dt);
   });
 }
 function handleDrawRects(world: World) {
@@ -301,14 +303,14 @@ function handleMovement(world: World) {
   world.query({ and: [Velocity, Acceleration] }).forEach((e) => {
     const v = world.getComponent(e, Velocity);
     const a = world.getComponent(e, Acceleration);
-    v.x += (a.x * Time.dtMilli) / 1000;
-    v.y += (a.y * Time.dtMilli) / 1000;
+    v.x += a.x * Time.dt;
+    v.y += a.y * Time.dt;
   });
   world.query({ and: [Transform, Velocity] }).forEach((e) => {
     const t = world.getComponent(e, Transform);
     const v = world.getComponent(e, Velocity);
-    t.x += (v.x * Time.dtMilli) / 1000;
-    t.y += (v.y * Time.dtMilli) / 1000;
+    t.x += v.x * Time.dtMilli;
+    t.y += v.y * Time.dtMilli;
   });
 }
 function handlePointer(world: World) {
@@ -457,18 +459,17 @@ function detach(world: World, parent: entityT, child: entityT) {
   const hc = world.getComponent(child, Hierarchy);
   hc.parent = -1;
 }
-function reverseKinematics(world:World, end:entityT, targetTransform:typeof Transform): typeof Transform {
-	const parts:(typeof Transform)[]=[];
-	let e = end;
-	while (world.hasComponent(e,Hierarchy)){
-		if (!world.hasComponent(e, Transform)||!world.hasComponent(e, Hierarchy))break;
-		parts.push(world.getComponent(e, Transform))
-		const p = world.getComponent(e,Hierarchy).parent;
-		if (p == -1)break
-		e = p;
-	}
-
-}
+// function reverseKinematics(world:World, end:entityT, targetTransform:typeof Transform): typeof Transform {
+// 	const parts:(typeof Transform)[]=[];
+// 	let e = end;
+// 	while (world.hasComponent(e,Hierarchy)){
+// 		if (!world.hasComponent(e, Transform)||!world.hasComponent(e, Hierarchy))break;
+// 		parts.push(world.getComponent(e, Transform))
+// 		const p = world.getComponent(e,Hierarchy).parent;
+// 		if (p == -1)break
+// 		e = p;
+// 	}
+// }
 
 // initialization
 const game = new World();
@@ -476,7 +477,9 @@ const game = new World();
 const player = addPerson(game, 0, 0);
 game.getComponent(player.rightUpperLeg, AngularVelocity).radPerSecond = 2;
 game.getComponent(player.rightLowerLeg, AngularVelocity).radPerSecond = -2;
-game.getComponent(player.leftLowerArm, AngularVelocity).radPerSecond = -1;
+const armVel = game.getComponent(player.leftLowerArm, AngularVelocity);
+armVel.radPerSecond = -1;
+
 // addPerson(game, -3, 1);
 // addPerson(game, 3, 0);
 
@@ -491,6 +494,12 @@ game.addComponent(camera, Hierarchy, { parent: player.torso });
 {
   (function update() {
     requestAnimationFrame(update);
+	const armTransform = game.getComponent(player.leftLowerArm, Transform); 
+	const rad = Math.abs(armTransform.rad % (Math.PI * 2));
+	if (Math.cos(rad) < 0) {
+		armVel.radPerSecond *= -1;
+	}
+
     drawBackground();
     game.update([
       handleCamera,

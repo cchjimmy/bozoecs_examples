@@ -1,10 +1,21 @@
 import {
+  addCamera,
   addMinion,
   addPlayer,
-  addCamera,
   addSpawner,
 } from "../../ecs/entities.ts";
-import { Camera } from "../../ecs/components.ts";
+import {
+  Camera,
+  Circle,
+  Color,
+  Health,
+  IsPlayer,
+  OnScreen,
+  QtRect,
+  Rect,
+  Transform,
+  Velocity,
+} from "../../ecs/components.ts";
 import {
   handleAiAttack,
   handleAttack,
@@ -15,29 +26,29 @@ import {
   handlePathfind,
 } from "../../ecs/systems/gameplay.ts";
 import {
-  handleCamera,
-  handleTimers,
-  handleMovement,
   handleCallbacks,
+  handleCamera,
+  handleMovement,
+  handleTimers,
 } from "../../ecs/systems/core.ts";
 import {
-  handleCollision,
-  handleQuadtreeElms,
   checkOnScreenEntities,
   drawBg,
+  handleCollision,
+  handleQuadtreeElms,
 } from "./utils.ts";
 import {
-  drawImg,
-  drawRects,
-  drawTexts,
+  drawAttackTargets,
+  drawCameraRect,
   drawCircles,
   drawHealthBars,
-  drawPathFindTargets,
+  drawImg,
   drawParticleEmitters,
-  drawCameraRect,
-  drawAttackTargets,
+  drawPathFindTargets,
+  drawRects,
+  drawTexts,
 } from "../../ecs/systems/drawing.ts";
-import { World } from "bozoecs";
+import { entityT, World } from "bozoecs";
 import { Quadtree } from "quadtree";
 import { isQtreeElm } from "./utils.ts";
 import ctx from "../resizingCanvas/api.ts";
@@ -61,6 +72,12 @@ function setUp(world: World): void {
   });
 
   const player = addPlayer(world, 0, 0);
+  world.addComponent(player, Transform, { scaleX: 2, scaleY: 2 });
+  const playerClone = world.cloneEntity(player);
+  world.setComponent(playerClone, Transform, { y: -5 }, false);
+  world.setComponent(playerClone, Velocity, {}, false);
+  world.removeComponent(playerClone, IsPlayer, false);
+  qtree.insert(world.setComponent(playerClone, QtRect, {}, false));
   const cam = addCamera(world, 0, 0);
   const camComp = world.getComponent(cam, Camera);
   // camComp.targetEntity = player;

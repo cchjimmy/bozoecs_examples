@@ -1,4 +1,4 @@
-import { isRect, isCircle, isLine } from "quadtree/shapes";
+import { isCircle, isLine, isRect } from "quadtree/shapes";
 import { QtreeShapes, Quadtree } from "quadtree";
 import { World } from "bozoecs";
 import {
@@ -30,12 +30,14 @@ export function checkOnScreenEntities(world: World, qtree: Quadtree) {
   for (const e of world.query({ and: [OnScreen] })) {
     world.removeComponent(e, OnScreen);
   }
-  for (const shape of qtree.query({
-    x: camTransform.x - ctx.canvas.width / (cam.zoom * 2),
-    y: camTransform.y - ctx.canvas.height / (cam.zoom * 2),
-    width: ctx.canvas.width / cam.zoom,
-    height: ctx.canvas.height / cam.zoom,
-  })) {
+  for (
+    const shape of qtree.query({
+      x: camTransform.x - ctx.canvas.width / (cam.zoom * 2),
+      y: camTransform.y - ctx.canvas.height / (cam.zoom * 2),
+      width: ctx.canvas.width / cam.zoom,
+      height: ctx.canvas.height / cam.zoom,
+    })
+  ) {
     const s = shape as typeof QtRect | typeof QtCircle;
     world.addComponent(s.owner, OnScreen);
   }
@@ -67,12 +69,14 @@ export function handleQuadtreeElms(world: World) {
 }
 
 export function handleCollision(world: World, qtree: Quadtree) {
+  let totalDx = 0, totalDy = 0, otherCount = 0;
   for (const e of world.query({ and: [QtRect, Transform, Velocity] })) {
     const qr = world.getComponent(e, QtRect);
     const t = world.getComponent(e, Transform);
     for (const other of qtree.query(qr)) {
       const o = other as typeof QtCircle | typeof QtRect;
       if (o.owner == e) continue;
+      otherCount++;
       if (isCircle(o)) {
         const c = qr.rad ? Math.cos(qr.rad) : 1;
         const s = qr.rad ? Math.sin(qr.rad) : 0;
@@ -82,14 +86,14 @@ export function handleCollision(world: World, qtree: Quadtree) {
         let tdy = 0;
         if (
           o.radius + qr.width / 2 - Math.abs(dx) <
-          o.radius + qr.height / 2 - Math.abs(dy)
+            o.radius + qr.height / 2 - Math.abs(dy)
         ) {
           tdx = (dx / Math.abs(dx)) * (o.radius + qr.width / 2 - Math.abs(dx));
         } else {
           tdy = (dy / Math.abs(dy)) * (o.radius + qr.height / 2 - Math.abs(dy));
         }
-        t.x -= tdx * c + tdy * -s;
-        t.y -= tdx * s + tdy * c;
+        totalDx -= tdx * c + tdy * -s;
+        totalDy -= tdx * s + tdy * c;
       } else if (isRect(o)) {
         // const dx = qr.x + qr.width / 2 - (o.x + o.width / 2);
         // const dy = qr.y + qr.height / 2 - (o.y + o.height / 2);
@@ -103,7 +107,12 @@ export function handleCollision(world: World, qtree: Quadtree) {
         //     (dy / Math.abs(dy)) * ((qr.height + o.height) / 2 - Math.abs(dy));
         // }
       }
+
     }
+	if (otherCount == 0) continue;
+    t.x += totalDx / otherCount;
+    t.y += totalDy / otherCount;
+    totalDx = totalDy = otherCount = 0;
   }
   for (const e of world.query({ and: [QtCircle, Transform, Velocity] })) {
     const qc = world.getComponent(e, QtCircle);
@@ -111,13 +120,14 @@ export function handleCollision(world: World, qtree: Quadtree) {
     for (const other of qtree.query(qc)) {
       const o = other as typeof QtCircle | typeof QtRect;
       if (o.owner == e) continue;
+      otherCount++;
       if (isCircle(o)) {
         const dx = qc.x - o.x;
         const dy = qc.y - o.y;
         const mag = Math.sqrt(dx * dx + dy * dy);
         if (mag == 0) continue;
-        t.x += (dx / mag) * (qc.radius + o.radius - mag);
-        t.y += (dy / mag) * (qc.radius + o.radius - mag);
+        totalDx += (dx / mag) * (qc.radius + o.radius - mag);
+        totalDy += (dy / mag) * (qc.radius + o.radius - mag);
       } else if (isRect(o)) {
         const c = o.rad ? Math.cos(o.rad) : 1;
         const s = o.rad ? Math.sin(o.rad) : 0;
@@ -127,16 +137,20 @@ export function handleCollision(world: World, qtree: Quadtree) {
         let tdy = 0;
         if (
           qc.radius + o.width / 2 - Math.abs(dx) <
-          qc.radius + o.height / 2 - Math.abs(dy)
+            qc.radius + o.height / 2 - Math.abs(dy)
         ) {
           tdx = (dx / Math.abs(dx)) * (qc.radius + o.width / 2 - Math.abs(dx));
         } else {
           tdy = (dy / Math.abs(dy)) * (qc.radius + o.height / 2 - Math.abs(dy));
         }
-        t.x += tdx * c + tdy * -s;
-        t.y += tdx * s + tdy * c;
+        totalDx += tdx * c + tdy * -s;
+        totalDy += tdx * s + tdy * c;
       }
     }
+	if (otherCount == 0) continue;
+    t.x += totalDx / otherCount;
+    t.y += totalDy / otherCount;
+    totalDx = totalDy = otherCount = 0;
   }
 }
 

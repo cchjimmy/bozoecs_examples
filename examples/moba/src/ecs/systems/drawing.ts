@@ -1,18 +1,18 @@
 import ctx from "../../plugins/resizingCanvas/api.ts";
 import { World } from "bozoecs";
 import {
-  Rect,
-  Graphic,
-  OnScreen,
-  Transform,
+  Attack,
+  Camera,
   Circle,
   Color,
+  Graphic,
   Health,
-  Text,
-  Camera,
+  OnScreen,
   ParticleEmitter,
   PathFinder,
-  Attack,
+  Rect,
+  Text,
+  Transform,
 } from "../components.ts";
 
 export function drawCircles(world: World) {
@@ -100,8 +100,8 @@ export function drawRects(world: World) {
 
 export function drawHealthBars(world: World) {
   const widthMult = 1.5;
-  const barHeight = 0.3;
-  const margin = 0.2;
+  const barHeight = 0.1;
+  const margin = 0.03;
   const relativeBarY = -barHeight / 2 - 1;
 
   for (const e of world.query({ and: [OnScreen, Health, Transform, Rect] })) {
@@ -111,7 +111,7 @@ export function drawHealthBars(world: World) {
     const cos = Math.cos(t.rad);
     const sin = Math.sin(t.rad);
     const x = -(r.width * widthMult) / 2;
-    const y = relativeBarY + r.y;
+    const y = relativeBarY + r.y * t.scaleY;
     ctx.fillStyle = "black";
     ctx.fillRect(
       t.x - margin / 2 + cos * x - sin * y,
@@ -162,8 +162,8 @@ export function drawTexts(world: World) {
     for (let i = 0, l = lines.length; i < l; i++) {
       if (lines[i].length == 0) continue;
       const txtMetric = ctx.measureText(lines[i]);
-      const textHeight =
-        txtMetric.actualBoundingBoxAscent + txtMetric.actualBoundingBoxDescent;
+      const textHeight = txtMetric.actualBoundingBoxAscent +
+        txtMetric.actualBoundingBoxDescent;
       ctx.rect(
         p.x + t.x,
         p.y + t.y + i * (2 * t.padding + textHeight),
@@ -176,8 +176,8 @@ export function drawTexts(world: World) {
     ctx.fillStyle = t.color;
     for (let i = 0, l = lines.length; i < l; i++) {
       const txtMetric = ctx.measureText(lines[i]);
-      const textHeight =
-        txtMetric.actualBoundingBoxAscent + txtMetric.actualBoundingBoxDescent;
+      const textHeight = txtMetric.actualBoundingBoxAscent +
+        txtMetric.actualBoundingBoxDescent;
       ctx.fillText(
         lines[i],
         p.x + t.x + t.padding,
